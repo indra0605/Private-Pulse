@@ -1,0 +1,45 @@
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+// Small, privacy-first survey contract.
+// Goal: simple deploy + public feedback submission.
+
+export sealed ledger surveyId: Bytes<32>;
+export sealed ledger question: Bytes<64>;
+export sealed ledger questionCount: Uint<16>;
+
+export ledger responseCount: Counter;
+export ledger responseCommitments: Map<Bytes<32>, Bytes<32>>;
+
+constructor(_surveyId: Bytes<32>, _question: Bytes<64>, _questionCount: Uint<16>) {
+    assert(_questionCount > 0, "Question count must be greater than zero");
+
+    surveyId = disclose(_surveyId);
+    question = disclose(_question);
+    questionCount = disclose(_questionCount);
+}
+
+export circuit submitResponse(_response: Bytes<32>, _responseSalt: Bytes<32>): [] {
+    const responseId = getResponseId(_responseSalt);
+    const responseCommitment = getResponseCommitment(_response, _responseSalt);
+
+    responseCommitments.insert(responseId, responseCommitment);
+    responseCount.increment(1);
+}
+
+circuit getResponseId(_responseSalt: Bytes<32>): Bytes<32> {
+    return disclose(persistentHash<Vector<2, Bytes<32>>>([
+        pad(32, "midnight-survey:response-id:"),
+        _responseSalt
+    ]));
+}
+
+circuit getResponseCommitment(_response: Bytes<32>, _responseSalt: Bytes<32>): Bytes<32> {
+    return disclose(persistentHash<Vector<4, Bytes<32>>>([
+        pad(32, "midnight-survey:response:"),
+        surveyId,
+        _response,
+        _responseSalt
+    ]));
+}
