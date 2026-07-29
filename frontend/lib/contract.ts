@@ -1,0 +1,2 @@
+export const DEFAULT_CONTRACT_ADDRESS =
+  '2856cddb07f45dcda37a4985fc095808ac57b1ae9fced2103a896acd894f8b7c';
