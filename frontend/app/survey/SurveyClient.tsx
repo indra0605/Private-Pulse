@@ -7,13 +7,10 @@ import { DEFAULT_CONTRACT_ADDRESS } from '@/lib/contract';
 import { createConnectedSession, detectWallet, TARGET_NETWORK_ID } from '@/lib/midnight';
 import type { ConnectedSession } from '@/lib/midnight';
 import { getSurveySnapshot, submitFeedback } from '@/lib/survey-tx';
+import { utf8ByteLength } from '@/lib/codec';
 
 function isBlank(text: string) {
   return !text.trim();
-}
-
-function responseByteLength(text: string) {
-  return new TextEncoder().encode(text.trim()).length;
 }
 
 export default function SurveyClient() {
@@ -112,7 +109,7 @@ export default function SurveyClient() {
 
   const question = snapshot?.question.trim() ?? '';
   const questionReady = Boolean(question);
-  const responseBytes = responseByteLength(feedback);
+  const responseBytes = utf8ByteLength(feedback);
   const responseTooLong = responseBytes > 128;
   const buttonLabel = connecting
     ? 'Connecting…'

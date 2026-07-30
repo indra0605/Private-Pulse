@@ -1,5 +1,7 @@
 # Private Pulse
 
+[![CI](https://github.com/indra0605/Private-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/indra0605/Private-Pulse/actions/workflows/ci.yml)
+
 Private Pulse is a browser-only anonymous survey app built for Midnight preview. It lets you deploy a survey contract from the wallet, share the contract address, and collect responses without storing responder identity.
 
 ## Link Section
@@ -92,6 +94,27 @@ Main contract circuit:
 
 - `submitResponse(_response, _responseSalt)`
 
+## Privacy Model
+
+What an observer can learn:
+
+- the contract address and survey question
+- how many responses have been submitted
+- the public text of each anonymous response
+- when the contract was deployed and when responses were added, based on chain/indexer timing
+
+What an observer cannot learn from this app alone:
+
+- the wallet address or identity of the responder
+- a stable responder handle stored in contract state
+- a direct link between a response and a specific wallet account
+
+Why that holds:
+
+- the contract stores responses under anonymous IDs derived from a random salt
+- the response text is public, but no responder identity is written to ledger state
+- the frontend only keeps the wallet connection in memory for the session and does not attach it to the stored response
+
 ## How To Use
 
 ### Install
@@ -172,6 +195,7 @@ Contract-side source files:
 
 ```bash
 npm run lint
+npm test
 npm run build
 npm run compile:contract
 npm run sync:assets

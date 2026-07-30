@@ -4,6 +4,7 @@ import { CompiledContract } from '@midnight-ntwrk/compact-js';
 import { createUnprovenDeployTx, submitTxAsync } from '@midnight-ntwrk/midnight-js-contracts';
 
 import { Survey } from '@/contract/src/index';
+import { encodePaddedUtf8 } from './codec';
 import type { ConnectedSession } from './midnight';
 
 const SURVEY_CIRCUIT_ASSETS = '/zk/anonymous-feedback/';
@@ -12,20 +13,6 @@ function makeCompiledContract() {
     CompiledContract.withVacantWitnesses,
     CompiledContract.withCompiledFileAssets(SURVEY_CIRCUIT_ASSETS),
   ) as any;
-}
-
-function encodeQuestion(question: string): Uint8Array {
-  const trimmed = question.trim();
-  if (!trimmed) throw new Error('Question required');
-
-  const encoded = new TextEncoder().encode(trimmed);
-  if (encoded.length > 64) {
-    throw new Error('Question must be 64 bytes or fewer');
-  }
-
-  const padded = new Uint8Array(64);
-  padded.set(encoded);
-  return padded;
 }
 
 function generateSurveyId(): Uint8Array {
@@ -41,7 +28,7 @@ export async function deploySurvey(
 ): Promise<{ contractAddress: string }> {
   const compiledContract = makeCompiledContract();
   const surveyId = generateSurveyId();
-  const questionBytes = encodeQuestion(question);
+  const questionBytes = encodePaddedUtf8(question, 64, 'Question');
 
   const deployTxData = await (createUnprovenDeployTx as any)(
     { zkConfigProvider: session.providers.zkConfigProvider, walletProvider: session.providers.walletProvider },

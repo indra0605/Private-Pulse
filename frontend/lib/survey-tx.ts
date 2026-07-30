@@ -5,7 +5,7 @@ import { CompiledContract } from '@midnight-ntwrk/compact-js';
 import { submitCallTxAsync } from '@midnight-ntwrk/midnight-js-contracts';
 
 import { Survey } from '@/contract/src/index';
-import { fromHex, toHex } from './midnight';
+import { decodePaddedUtf8, encodePaddedUtf8, fromHex, toHex } from './codec';
 import type { ConnectedSession } from './midnight';
 
 const SURVEY_CIRCUIT_ASSETS = '/zk/anonymous-feedback/';
@@ -15,12 +15,6 @@ function makeCompiledContract() {
     CompiledContract.withVacantWitnesses,
     CompiledContract.withCompiledFileAssets(SURVEY_CIRCUIT_ASSETS),
   ) as any;
-}
-
-function decodeText(bytes: Uint8Array): string {
-  let end = bytes.length;
-  while (end > 0 && bytes[end - 1] === 0) end -= 1;
-  return new TextDecoder().decode(bytes.slice(0, end));
 }
 
 export type SurveySnapshot = {
@@ -34,27 +28,13 @@ export type SurveySnapshot = {
   }>;
 };
 
-function encodeResponse(value: string): Uint8Array {
-  const trimmed = value.trim();
-  if (!trimmed) throw new Error('Response required');
-
-  const encoded = new TextEncoder().encode(trimmed);
-  if (encoded.length > 128) {
-    throw new Error('Response must be 128 bytes or fewer.');
-  }
-
-  const padded = new Uint8Array(128);
-  padded.set(encoded);
-  return padded;
-}
-
 export async function submitFeedback(
   session: ConnectedSession,
   response: string,
   contractAddress: string,
 ): Promise<string> {
   const compiledContract = makeCompiledContract();
-  const responseBytes = encodeResponse(response);
+  const responseBytes = encodePaddedUtf8(response, 128, 'Response');
   const salt = crypto.getRandomValues(new Uint8Array(32));
 
   const result = await (submitCallTxAsync as any)(session.providers, {
@@ -85,12 +65,12 @@ export async function getSurveySnapshot(queryUrl: string, contractAddress: strin
   const ledger = Survey.ledger(contractState.data);
   const responses = Array.from(ledger.anonymousResponses, ([id, response]) => ({
     id: toHex(id),
-    text: decodeText(response),
+    text: decodePaddedUtf8(response),
   })).filter(({ text }) => Boolean(text));
 
   return {
     surveyId: toHex(ledger.surveyId),
-    question: decodeText(ledger.question),
+    question: decodePaddedUtf8(ledger.question),
     questionCount: ledger.questionCount,
     responseCount: ledger.responseCount,
     responses,
