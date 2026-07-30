@@ -7,7 +7,6 @@
     "sync:assets": "node scripts/sync-zk-assets.mjs",
     "predev": "npm run compile:contract && npm run sync:assets",
     "dev": "next dev --webpack",
-    "prebuild": "npm run compile:contract && npm run sync:assets",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
