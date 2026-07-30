@@ -10,7 +10,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test tests/**/*.test.ts"
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-js": "^2.5.0",
