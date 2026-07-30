@@ -4,7 +4,7 @@ Private Pulse is a browser-only anonymous survey app for Midnight preview. Use 1
 
 Default contract address:
 
-`2856cddb07f45dcda37a4985fc095808ac57b1ae9fced2103a896acd894f8b7c`
+`44f8bcc34b25c66e937a809389df7808159c8a93c37f9e4417aae3be368cef65`
 
 ## What it does
 
@@ -12,7 +12,11 @@ Default contract address:
 - Sets network ID before wallet or contract work
 - Deploys anonymous survey contract through wallet proving flow
 - Shows deployed contract address on screen
-- Lets anyone paste the contract address and submit feedback
+- Publishes response text without storing the responder's identity
+- Shows every anonymous response beneath the survey
+
+> Contract schema changed: surveys deployed before the anonymous response feed was added
+> only contain response commitments and must be redeployed to show response text.
 
 ## Run
 

@@ -46,9 +46,9 @@ textarea {
 }
 
 .survey-shell {
-  width: min(100%, 760px);
+  width: min(100%, 820px);
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 32px 20px 72px;
 }
 
 .deploy-page {
@@ -190,6 +190,24 @@ textarea {
   font-weight: 700;
 }
 
+.answer-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.answer-count {
+  color: var(--muted);
+  font-family: var(--font-code), monospace;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.answer-count--error {
+  color: var(--error);
+}
+
 .answer-field textarea {
   width: 100%;
   resize: vertical;
@@ -315,6 +333,140 @@ textarea {
   letter-spacing: 0.04em;
 }
 
+.responses-section {
+  position: relative;
+  margin-top: 28px;
+  padding: clamp(22px, 5vw, 38px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 26px;
+  background: rgba(12, 13, 25, 0.42);
+  box-shadow: 0 20px 60px rgba(4, 5, 14, 0.18);
+  backdrop-filter: blur(14px);
+}
+
+.responses-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+  color: #f7f8ff;
+}
+
+.responses-heading .survey-kicker {
+  margin-bottom: 9px;
+  color: #bcb4ff;
+}
+
+.responses-heading h2 {
+  margin: 0;
+  font-family: var(--font-display), serif;
+  font-size: clamp(32px, 6vw, 44px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.responses-total {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  font-family: var(--font-code), monospace;
+  font-size: 12px;
+}
+
+.responses-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.response-card {
+  position: relative;
+  padding: 21px 22px 23px;
+  border: 1px solid rgba(217, 219, 234, 0.9);
+  border-radius: 17px;
+  color: var(--foreground);
+  background: var(--paper);
+  box-shadow: 0 9px 24px rgba(4, 5, 14, 0.14);
+}
+
+.response-card:nth-child(even) {
+  margin-left: 18px;
+}
+
+.response-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-family: var(--font-code), monospace;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.anonymous-avatar {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--accent);
+  font-family: var(--font-display), serif;
+  font-size: 15px;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.response-number {
+  margin-left: auto;
+  color: #9a9caf;
+}
+
+.response-card > p {
+  margin: 15px 0 0;
+  font-family: var(--font-display), serif;
+  font-size: clamp(20px, 3vw, 25px);
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.responses-empty {
+  display: flex;
+  min-height: 126px;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  color: #c2c4d5;
+  text-align: center;
+}
+
+.responses-empty > span {
+  color: #bcb4ff;
+  font-family: var(--font-code), monospace;
+}
+
+.responses-empty p {
+  max-width: 430px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 @media (max-width: 540px) {
   .survey-shell {
     padding: 18px 12px;
@@ -335,6 +487,14 @@ textarea {
   .survey-footer {
     flex-direction: column;
     gap: 7px;
+  }
+
+  .responses-section {
+    border-radius: 22px;
+  }
+
+  .response-card:nth-child(even) {
+    margin-left: 0;
   }
 }
 

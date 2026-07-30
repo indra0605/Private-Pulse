@@ -29,7 +29,7 @@ export type Ledger = {
   readonly question: Uint8Array;
   readonly questionCount: bigint;
   readonly responseCount: bigint;
-  responseCommitments: {
+  anonymousResponses: {
     isEmpty(): boolean;
     size(): bigint;
     member(key_0: Uint8Array): boolean;

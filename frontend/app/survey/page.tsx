@@ -3,12 +3,12 @@ import SurveyClient from './SurveyClient';
 
 export const metadata: Metadata = {
   title: 'Answer survey',
-  description: 'Answer a Private Pulse survey privately.',
+  description: 'Share an answer without attaching your identity.',
 };
 
 export default function SurveyPage() {
   return (
-    <main className="flex min-h-0 flex-1 items-center">
+    <main className="flex min-h-0 flex-1">
       <SurveyClient />
     </main>
   );

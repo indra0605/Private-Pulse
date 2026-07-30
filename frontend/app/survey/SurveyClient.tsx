@@ -12,6 +12,10 @@ function isBlank(text: string) {
   return !text.trim();
 }
 
+function responseByteLength(text: string) {
+  return new TextEncoder().encode(text.trim()).length;
+}
+
 export default function SurveyClient() {
   const [session, setSession] = useState<ConnectedSession | null>(null);
   const [feedback, setFeedback] = useState('');
@@ -34,16 +38,22 @@ export default function SurveyClient() {
     if (!session) return;
     let ignore = false;
 
-    getSurveySnapshot(session.config.indexerUri, DEFAULT_CONTRACT_ADDRESS)
-      .then((data) => {
-        if (!ignore) setSnapshot(data);
-      })
-      .catch((err) => {
-        if (!ignore) setError(err instanceof Error ? err.message : String(err));
-      });
+    const refresh = () => {
+      getSurveySnapshot(session.config.indexerUri, DEFAULT_CONTRACT_ADDRESS)
+        .then((data) => {
+          if (!ignore) setSnapshot(data);
+        })
+        .catch((err) => {
+          if (!ignore) setError(err instanceof Error ? err.message : String(err));
+        });
+    };
+
+    refresh();
+    const refreshTimer = window.setInterval(refresh, 15_000);
 
     return () => {
       ignore = true;
+      window.clearInterval(refreshTimer);
     };
   }, [session]);
 
@@ -75,8 +85,19 @@ export default function SurveyClient() {
     setBusy(true);
     setError('');
     try {
+      const previousCount = snapshot?.responseCount ?? BigInt(0);
       await submitFeedback(session, feedback, DEFAULT_CONTRACT_ADDRESS);
-      const data = await getSurveySnapshot(session.config.indexerUri, DEFAULT_CONTRACT_ADDRESS);
+      let data = await getSurveySnapshot(session.config.indexerUri, DEFAULT_CONTRACT_ADDRESS);
+
+      for (
+        let attempt = 0;
+        attempt < 12 && (data?.responseCount ?? BigInt(0)) <= previousCount;
+        attempt += 1
+      ) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1_000));
+        data = await getSurveySnapshot(session.config.indexerUri, DEFAULT_CONTRACT_ADDRESS);
+      }
+
       if (mountedRef.current) {
         setSnapshot(data);
         setFeedback('');
@@ -87,10 +108,12 @@ export default function SurveyClient() {
     } finally {
       if (mountedRef.current) setBusy(false);
     }
-  }, [connectWallet, feedback, session]);
+  }, [connectWallet, feedback, session, snapshot]);
 
   const question = snapshot?.question.trim() ?? '';
   const questionReady = Boolean(question);
+  const responseBytes = responseByteLength(feedback);
+  const responseTooLong = responseBytes > 128;
   const buttonLabel = connecting
     ? 'Connecting…'
     : busy
@@ -105,7 +128,7 @@ export default function SurveyClient() {
         <section className="survey-card survey-card--empty">
           <span className="privacy-mark">Private Pulse</span>
           <h1>Install 1AM Wallet to answer</h1>
-          <p>This survey uses 1AM Wallet to keep your response private.</p>
+          <p>This survey uses 1AM Wallet to publish your answer without storing your identity.</p>
           <a className="survey-action" href="https://releases.dev.midnight.network/" target="_blank" rel="noreferrer">
             Get 1AM Wallet
           </a>
@@ -133,7 +156,7 @@ export default function SurveyClient() {
           <h1 id="survey-question">
             {!session ? 'Ready to share your honest answer?' : question || 'Loading today’s question…'}
           </h1>
-          {!session && <p className="question-hint">Connect once to reveal question and answer privately.</p>}
+          {!session && <p className="question-hint">Connect once to reveal the question and answer without attaching your identity.</p>}
         </div>
 
         {submitted ? (
@@ -141,18 +164,24 @@ export default function SurveyClient() {
             <span className="success-check" aria-hidden="true">✓</span>
             <div>
               <h2>Answer sent</h2>
-              <p>Your response stays private. Thanks for sharing.</p>
+              <p>Your answer is now visible below as an anonymous response.</p>
             </div>
           </div>
         ) : (
           <>
             <label className="answer-field">
-              <span>Your answer</span>
+              <span className="answer-label">
+                <span>Your answer</span>
+                <span className={responseTooLong ? 'answer-count answer-count--error' : 'answer-count'}>
+                  {responseBytes}/128 bytes
+                </span>
+              </span>
               <textarea
                 value={feedback}
                 onChange={(event) => setFeedback(event.target.value)}
                 rows={5}
                 disabled={!questionReady}
+                aria-invalid={responseTooLong}
                 placeholder={questionReady ? 'Write what you really think…' : 'Question loads after wallet connection'}
               />
             </label>
@@ -160,7 +189,7 @@ export default function SurveyClient() {
             <button
               type="button"
               onClick={submit}
-              disabled={connecting || busy || Boolean(session && (!questionReady || isBlank(feedback)))}
+              disabled={connecting || busy || Boolean(session && (!questionReady || isBlank(feedback) || responseTooLong))}
               className="survey-action"
             >
               {buttonLabel}
@@ -172,9 +201,46 @@ export default function SurveyClient() {
         {error && <p className="survey-error" role="alert">{error}</p>}
 
         <footer className="survey-footer">
-          <span>Encrypted before sending</span>
+          <span>No identity stored</span>
           {snapshot && <span>{snapshot.responseCount.toString()} answers</span>}
         </footer>
+      </section>
+
+      <section className="responses-section" aria-labelledby="responses-title">
+        <div className="responses-heading">
+          <div>
+            <p className="survey-kicker">Shared openly</p>
+            <h2 id="responses-title">Anonymous responses</h2>
+          </div>
+          <span className="responses-total" aria-label={`${snapshot?.responses.length ?? 0} responses`}>
+            {snapshot?.responses.length ?? 0}
+          </span>
+        </div>
+
+        {!session ? (
+          <div className="responses-empty">
+            <span aria-hidden="true">•••</span>
+            <p>Connect your wallet to reveal the question and its anonymous responses.</p>
+          </div>
+        ) : snapshot?.responses.length ? (
+          <ol className="responses-list">
+            {snapshot.responses.map((response) => (
+              <li className="response-card" key={response.id}>
+                <div className="response-meta">
+                  <span className="anonymous-avatar" aria-hidden="true">A</span>
+                  <span>Anonymous response</span>
+                  <span className="response-number">ID {response.id.slice(0, 6)}</span>
+                </div>
+                <p>{response.text}</p>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="responses-empty">
+            <span aria-hidden="true">✦</span>
+            <p>No responses yet. The first honest answer can be yours.</p>
+          </div>
+        )}
       </section>
     </div>
   );

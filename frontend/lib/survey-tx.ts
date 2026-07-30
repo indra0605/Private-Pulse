@@ -28,16 +28,24 @@ export type SurveySnapshot = {
   question: string;
   questionCount: bigint;
   responseCount: bigint;
-  responseSize: bigint;
+  responses: Array<{
+    id: string;
+    text: string;
+  }>;
 };
 
-export async function inputToBytes32(value: string): Promise<Uint8Array> {
+function encodeResponse(value: string): Uint8Array {
   const trimmed = value.trim();
-  if (!trimmed) throw new Error('Value required');
-  const normalized = trimmed.startsWith('0x') ? trimmed.slice(2) : trimmed;
-  if (/^[0-9a-fA-F]{64}$/.test(normalized)) return fromHex(normalized);
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(trimmed));
-  return new Uint8Array(digest);
+  if (!trimmed) throw new Error('Response required');
+
+  const encoded = new TextEncoder().encode(trimmed);
+  if (encoded.length > 128) {
+    throw new Error('Response must be 128 bytes or fewer.');
+  }
+
+  const padded = new Uint8Array(128);
+  padded.set(encoded);
+  return padded;
 }
 
 export async function submitFeedback(
@@ -46,7 +54,7 @@ export async function submitFeedback(
   contractAddress: string,
 ): Promise<string> {
   const compiledContract = makeCompiledContract();
-  const responseBytes = await inputToBytes32(response);
+  const responseBytes = encodeResponse(response);
   const salt = crypto.getRandomValues(new Uint8Array(32));
 
   const result = await (submitCallTxAsync as any)(session.providers, {
@@ -75,11 +83,16 @@ export async function getSurveySnapshot(queryUrl: string, contractAddress: strin
 
   const contractState = ContractState.deserialize(fromHex(stateHex));
   const ledger = Survey.ledger(contractState.data);
+  const responses = Array.from(ledger.anonymousResponses, ([id, response]) => ({
+    id: toHex(id),
+    text: decodeText(response),
+  })).filter(({ text }) => Boolean(text));
+
   return {
     surveyId: toHex(ledger.surveyId),
     question: decodeText(ledger.question),
     questionCount: ledger.questionCount,
     responseCount: ledger.responseCount,
-    responseSize: ledger.responseCommitments.size(),
+    responses,
   };
 }
